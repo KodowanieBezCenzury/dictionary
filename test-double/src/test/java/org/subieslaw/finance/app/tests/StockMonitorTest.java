@@ -58,7 +58,18 @@ public class StockMonitorTest {
         //then
         assertEquals(currentPrice, BigDecimal.TEN);
     }
-
+    
+    @Test
+    public void should_verify_component_iteractions(){
+        //when
+        stockMonitor.registerStockForMonitoring("XXX", BigDecimal.TEN);
+        stockMonitor.verifyMonitoredStocks();
+        //then
+        verify(stockReader, times(2)).get(anyString());
+        verify(auditLog, times(2)).record(any(AuditEvent.class));
+        verify(stockEvent, times(0)).sendBelowThresholdNotification(anyString(), any(BigDecimal.class), any(BigDecimal.class));
+    }
+    
     @Test
     public void should_trigger_alert_when_price_under_limit(){
         //given
@@ -72,16 +83,4 @@ public class StockMonitorTest {
         //then
         verify(stockEvent, times(1)).sendBelowThresholdNotification("XXX", BigDecimal.TEN, BigDecimal.ONE);
     }
-
-    @Test
-    public void should_verify_component_iteractions(){
-        //when
-        stockMonitor.registerStockForMonitoring("XXX", BigDecimal.TEN);
-        stockMonitor.verifyMonitoredStocks();
-        //then
-        verify(stockReader, times(2)).get(anyString());
-        verify(auditLog, times(2)).record(any(AuditEvent.class));
-        verify(stockEvent, times(0)).sendBelowThresholdNotification(anyString(), any(BigDecimal.class), any(BigDecimal.class));
-    }
-
 }
