@@ -45,18 +45,19 @@ public class StockMonitorTest {
     @Test
     public void should_get_current_stock_price() throws IOException {
         //given
+        BigDecimal expectedStockValue = BigDecimal.TEN;
         StockReader stockReaderStub = new StockReader() {
             @Override
             public Optional<StockInfo> get(String stockTicker) {
                 return Optional.of(
-                    StockInfo.of(stockTicker,BigDecimal.TEN));
+                    StockInfo.of(stockTicker,expectedStockValue));
             }
         };
         this.stockMonitor = StockPriceMonitor.of(stockReaderStub, stockEvent, auditLog);
         //when
         BigDecimal currentPrice = stockMonitor.readCurrentStockPrice("XXX");
         //then
-        assertEquals(currentPrice, BigDecimal.TEN);
+        assertEquals(currentPrice, expectedStockValue);
     }
     
     @Test
@@ -67,20 +68,24 @@ public class StockMonitorTest {
         //then
         verify(stockReader, times(2)).get(anyString());
         verify(auditLog, times(2)).record(any(AuditEvent.class));
-        verify(stockEvent, times(0)).sendBelowThresholdNotification(anyString(), any(BigDecimal.class), any(BigDecimal.class));
+        verify(stockEvent, times(0)).sendBelowThresholdNotification(
+                                            anyString(),
+                                            any(BigDecimal.class),
+                                            any(BigDecimal.class));
     }
     
     @Test
     public void should_trigger_alert_when_price_under_limit(){
         //given
-        this.stockMonitor.registerStockForMonitoring("XXX", BigDecimal.TEN);
-        when(stockReader.get("XXX"))
-            .thenReturn(Optional.of(StockInfo.of("XXX",BigDecimal.ONE)));
+        this.stockMonitor.registerStockForMonitoring("AMZN", BigDecimal.TEN);
+        when(stockReader.get("AMZN"))
+            .thenReturn(Optional.of(StockInfo.of("AMZN",BigDecimal.ONE)));
         
         //when
         this.stockMonitor.verifyMonitoredStocks();
         
         //then
-        verify(stockEvent, times(1)).sendBelowThresholdNotification("XXX", BigDecimal.TEN, BigDecimal.ONE);
+        verify(stockEvent, times(1))
+            .sendBelowThresholdNotification("AMZN", BigDecimal.TEN, BigDecimal.ONE);
     }
 }
